@@ -2,6 +2,7 @@ export const colors = {
   // Base backgrounds
   background: '#090810',      // Main deep OLED background
   card: '#12101D',            // Card container background
+  surface: '#1B1829',         // Surface alias
   surfaceElevated: '#1B1829', // Elevated interactive surface
   surfaceHover: '#242036',    // Highlighted surface
 
@@ -26,6 +27,7 @@ export const colors = {
   success: '#10B981',         // Verified / Safe headroom
   warning: '#F59E0B',         // Clipping caution (< 0.5 dB headroom)
   danger: '#EF4444',          // Active digital clipping (> 0 dBFS)
+  error: '#EF4444',           // Error alias
   info: '#3B82F6',
 
   // Audio Graph Curves

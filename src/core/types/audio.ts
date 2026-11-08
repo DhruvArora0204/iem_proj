@@ -71,9 +71,44 @@ export interface EQProfile {
   isPublic: boolean;
   isVerified: boolean;
   upvotesCount: number;
+  ratingAverage?: number; // 1.0 to 5.0
+  ratingCount?: number;
+  userRating?: number; // current active user's rating (1 to 5)
+  userUpvoted?: boolean; // if current active user upvoted this profile
+  creatorAvatarUrl?: string;
   filters: BiquadFilterConfig[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProfileReview {
+  id: string;
+  profileId: string;
+  userId: string;
+  userName: string;
+  userAvatarUrl?: string;
+  rating: number; // 1 to 5 integer
+  comment: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export type ProfileReportReason =
+  | 'distortion_clipping'
+  | 'spam_inaccurate'
+  | 'inappropriate'
+  | 'copyright_duplicate'
+  | 'other';
+
+export interface ProfileReport {
+  id: string;
+  profileId: string;
+  reporterId: string;
+  reporterName?: string;
+  reason: ProfileReportReason;
+  details?: string;
+  status: 'pending' | 'reviewed' | 'actioned' | 'dismissed';
+  createdAt: string;
 }
 
 export type AudioRouteType =

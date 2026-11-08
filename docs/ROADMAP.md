@@ -146,14 +146,14 @@ This document outlines the phased development roadmap for **Audiophile**. Develo
 ---
 
 ### PHASE 6 — Community Features
-* **Status**: Queued
+* **Status**: Complete
 * **Objectives**:
   - Enable community preset sharing, reviews, and moderation.
 * **Implementation Tasks**:
-  1. Profile submission workflow with validation and filter limits.
-  2. Star ratings and community review threads.
-  3. Creator attribution and verified badge system.
-  4. Moderation reporting pipeline.
+  1. Profile submission workflow with validation and filter limits (`PublishProfileModal.tsx`, `communityService.ts`).
+  2. Star ratings (1-5 stars) and community review threads (`ProfileReviewsModal.tsx`).
+  3. Creator attribution and verified badge system (`[LAB VERIFIED]`, `[CURATED TARGET]`, `[COMMUNITY TUNE]`).
+  4. Moderation reporting pipeline (`ReportProfileModal.tsx`, `profile_reports` schema migration).
 * **Acceptance Criteria**:
   - Users can publish, discover, and rate community presets.
   - Verified status is protected and cannot be self-assigned.

@@ -12,6 +12,7 @@ export interface UserProfile {
   email: string;
   displayName: string;
   isGuest: boolean;
+  avatarUrl?: string;
 }
 
 export interface UserStoreState {

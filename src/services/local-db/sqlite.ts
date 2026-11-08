@@ -75,6 +75,26 @@ export async function initializeLocalDatabase(): Promise<void> {
       is_enabled INTEGER DEFAULT 1,
       FOREIGN KEY(profile_id) REFERENCES local_profiles(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS local_reviews (
+      id TEXT PRIMARY KEY,
+      profile_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      user_name TEXT NOT NULL,
+      rating INTEGER NOT NULL,
+      comment TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS local_reports (
+      id TEXT PRIMARY KEY,
+      profile_id TEXT NOT NULL,
+      reporter_id TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      details TEXT,
+      status TEXT DEFAULT 'pending',
+      created_at TEXT NOT NULL
+    );
   `);
 
   await seedCatalogData(db);

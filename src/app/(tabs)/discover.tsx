@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,6 +7,7 @@ import {
   Modal,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
@@ -18,116 +19,69 @@ import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import { spacing, borderRadius } from '@/theme/spacing';
 import { useAudioStore } from '@/store/useAudioStore';
+import { useUserStore } from '@/store/useUserStore';
+import { communityService } from '@/services/community/communityService';
+import { PublishProfileModal } from '@/features/community/components/PublishProfileModal';
+import { ReportProfileModal } from '@/features/community/components/ReportProfileModal';
+import { ProfileReviewsModal } from '@/features/community/components/ProfileReviewsModal';
 import type { EQProfile } from '@/core/types/audio';
-
-const DISCOVER_PROFILES: EQProfile[] = [
-  {
-    id: 'disc-1',
-    iemId: 'iem-1',
-    iemName: 'Moondrop Blessing 3',
-    name: 'Harman 2019v2 Target Alignment',
-    description: 'Precision compensation for standard 711 coupler measurements aligning Blessing 3 to the Harman 2019 IE acoustic curve.',
-    profileType: 'measurement_derived',
-    scenario: 'music_balanced',
-    targetCurve: 'Harman In-Ear 2019v2',
-    sourceAttribution: 'Standard IEC 60318-4 Rig',
-    preampDb: -2.5,
-    isPublic: true,
-    isVerified: true,
-    upvotesCount: 428,
-    filters: [
-      { id: '1', type: 'low_shelf', frequency: 105, gain: 3.5, q: 0.71, enabled: true },
-      { id: '2', type: 'peak', frequency: 220, gain: -1.2, q: 1.2, enabled: true },
-      { id: '3', type: 'peak', frequency: 1250, gain: 0.8, q: 1.5, enabled: true },
-      { id: '4', type: 'peak', frequency: 2800, gain: -1.5, q: 2.0, enabled: true },
-      { id: '5', type: 'peak', frequency: 5800, gain: -2.2, q: 2.5, enabled: true },
-      { id: '6', type: 'high_shelf', frequency: 10500, gain: 1.0, q: 0.71, enabled: true },
-    ],
-    createdAt: '2026-01-10T12:00:00Z',
-    updatedAt: '2026-01-10T12:00:00Z',
-  },
-  {
-    id: 'disc-2',
-    iemId: 'iem-1',
-    iemName: 'Moondrop Blessing 3',
-    name: 'IEF Neutral 2023 with Sub-Bass Boost',
-    description: 'Flat studio-neutral midrange target curve with a clean +4dB sub-bass shelf below 80 Hz.',
-    profileType: 'curated',
-    scenario: 'music_bass',
-    targetCurve: 'IEF Neutral 2023',
-    sourceAttribution: 'Acoustics Lab Curated',
-    preampDb: -3.8,
-    isPublic: true,
-    isVerified: true,
-    upvotesCount: 312,
-    filters: [
-      { id: '1', type: 'low_shelf', frequency: 80, gain: 4.0, q: 0.8, enabled: true },
-      { id: '2', type: 'peak', frequency: 250, gain: -0.8, q: 1.0, enabled: true },
-      { id: '3', type: 'peak', frequency: 3200, gain: -2.0, q: 1.8, enabled: true },
-      { id: '4', type: 'high_shelf', frequency: 9500, gain: 1.5, q: 0.71, enabled: true },
-    ],
-    createdAt: '2026-02-14T10:30:00Z',
-    updatedAt: '2026-02-14T10:30:00Z',
-  },
-  {
-    id: 'disc-3',
-    iemId: 'iem-1',
-    iemName: 'Moondrop Blessing 3',
-    name: 'FPS Spatial Footstep Cue Extractor',
-    description: 'Boosts 2-4 kHz pinna directional cues while attenuating resonant sub-bass clutter for competitive gaming.',
-    profileType: 'community',
-    creatorName: 'AcousticPhantom',
-    scenario: 'gaming_fps',
-    targetCurve: 'Custom Tactical FPS',
-    sourceAttribution: 'Community Verified',
-    preampDb: -1.8,
-    isPublic: true,
-    isVerified: false,
-    upvotesCount: 189,
-    filters: [
-      { id: '1', type: 'high_pass', frequency: 45, gain: 0.0, q: 0.71, enabled: true },
-      { id: '2', type: 'peak', frequency: 2800, gain: 3.5, q: 2.2, enabled: true },
-      { id: '3', type: 'peak', frequency: 4500, gain: 2.2, q: 2.0, enabled: true },
-      { id: '4', type: 'peak', frequency: 7200, gain: -3.0, q: 3.0, enabled: true },
-    ],
-    createdAt: '2026-03-01T08:15:00Z',
-    updatedAt: '2026-03-01T08:15:00Z',
-  },
-  {
-    id: 'disc-4',
-    iemId: 'iem-2',
-    iemName: 'Truthear Zero: RED',
-    name: 'Harman 2019v2 Bass Contour',
-    description: 'Calibrated compensation for Truthear Zero: RED with 10-ohm impedance adapter installed.',
-    profileType: 'curated',
-    scenario: 'music_balanced',
-    targetCurve: 'Harman In-Ear 2019v2',
-    sourceAttribution: 'Crinacle 711 Database',
-    preampDb: -2.0,
-    isPublic: true,
-    isVerified: true,
-    upvotesCount: 567,
-    filters: [
-      { id: '1', type: 'low_shelf', frequency: 105, gain: 2.0, q: 0.71, enabled: true },
-      { id: '2', type: 'peak', frequency: 6200, gain: -2.5, q: 3.0, enabled: true },
-    ],
-    createdAt: '2026-02-20T14:00:00Z',
-    updatedAt: '2026-02-20T14:00:00Z',
-  },
-];
 
 export default function DiscoverScreen() {
   const router = useRouter();
   const { activeProfile, setActiveProfile } = useAudioStore();
+  const { user } = useUserStore();
+
+  const [profiles, setProfiles] = useState<EQProfile[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTab, setFilterTab] = useState<'all' | 'curated' | 'community'>('all');
-  const [inspectProfile, setInspectProfile] = useState<EQProfile | null>(null);
 
-  const filteredList = DISCOVER_PROFILES.filter((p) => {
+  // Modals state
+  const [inspectProfile, setInspectProfile] = useState<EQProfile | null>(null);
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [reportProfileTarget, setReportProfileTarget] = useState<EQProfile | null>(null);
+  const [reviewsProfileTarget, setReviewsProfileTarget] = useState<EQProfile | null>(null);
+
+  useEffect(() => {
+    fetchProfiles();
+  }, []);
+
+  const fetchProfiles = async () => {
+    setLoading(true);
+    try {
+      const data = await communityService.getProfiles();
+      setProfiles(data);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpvoteToggle = async (profileId: string) => {
+    try {
+      const res = await communityService.toggleUpvote(profileId);
+      setProfiles((prev) =>
+        prev.map((p) =>
+          p.id === profileId
+            ? { ...p, upvotesCount: res.upvotesCount, userUpvoted: res.upvoted }
+            : p
+        )
+      );
+      if (inspectProfile && inspectProfile.id === profileId) {
+        setInspectProfile((prev) =>
+          prev ? { ...prev, upvotesCount: res.upvotesCount, userUpvoted: res.upvoted } : null
+        );
+      }
+    } catch (e) {
+      console.warn('Failed to toggle upvote:', e);
+    }
+  };
+
+  const filteredList = profiles.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.iemName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.targetCurve?.toLowerCase().includes(searchQuery.toLowerCase());
+      p.targetCurve?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.creatorName?.toLowerCase().includes(searchQuery.toLowerCase());
 
     if (!matchesSearch) return false;
 
@@ -153,11 +107,29 @@ export default function DiscoverScreen() {
         subtitle="Verified Reference Targets & Audiophile Presets"
       />
 
+      {/* Community Callout & Share Action */}
+      <Card variant="elevated" style={styles.communityBanner}>
+        <View style={styles.bannerRow}>
+          <View style={styles.bannerTextCol}>
+            <Text style={styles.bannerTitle}>AUDIOPHILE COMMUNITY EXCHANGE</Text>
+            <Text style={styles.bannerSubtitle}>
+              Explore verified laboratory targets or share your own personal IEM calibration.
+            </Text>
+          </View>
+          <Button
+            label="+ SHARE PRESET"
+            variant="primary"
+            size="sm"
+            onPress={() => setPublishModalOpen(true)}
+          />
+        </View>
+      </Card>
+
       {/* Search Input */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search profiles by curve, IEM, or genre..."
+          placeholder="Search profiles by curve, IEM, creator, or genre..."
           placeholderTextColor={colors.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -186,64 +158,109 @@ export default function DiscoverScreen() {
         />
       </View>
 
-      {/* Profiles List */}
-      {filteredList.map((item) => {
-        const isCurrent = activeProfile.id === item.id;
-        return (
-          <Card
-            key={item.id}
-            variant={isCurrent ? 'glow' : 'default'}
-            style={styles.profileCard}
-            onPress={() => setInspectProfile(item)}
-          >
-            <View style={styles.cardHeaderRow}>
-              <View style={styles.badgeGroup}>
-                <Badge
-                  label={item.profileType.toUpperCase().replace('_', ' ')}
-                  variant={item.profileType === 'community' ? 'info' : 'primary'}
-                  size="sm"
-                />
-                {item.isVerified && (
-                  <Badge label="LAB VERIFIED" variant="success" size="sm" />
-                )}
+      {loading ? (
+        <ActivityIndicator color={colors.primary} style={styles.loader} />
+      ) : (
+        /* Profiles List */
+        filteredList.map((item) => {
+          const isCurrent = activeProfile.id === item.id;
+          const isCommunity = item.profileType === 'community';
+
+          return (
+            <Card
+              key={item.id}
+              variant={isCurrent ? 'glow' : 'default'}
+              style={styles.profileCard}
+              onPress={() => setInspectProfile(item)}
+            >
+              <View style={styles.cardHeaderRow}>
+                <View style={styles.badgeGroup}>
+                  {item.isVerified ? (
+                    <Badge label="LAB VERIFIED" variant="success" size="sm" />
+                  ) : isCommunity ? (
+                    <Badge label="COMMUNITY TUNE" variant="info" size="sm" />
+                  ) : (
+                    <Badge label="CURATED TARGET" variant="primary" size="sm" />
+                  )}
+                  <Badge
+                    label={item.scenario.toUpperCase().replace('_', ' ')}
+                    variant="neutral"
+                    size="sm"
+                  />
+                </View>
+
+                {/* Upvote Toggle */}
+                <TouchableOpacity
+                  style={[styles.upvoteBtn, item.userUpvoted && styles.upvoteBtnActive]}
+                  onPress={() => handleUpvoteToggle(item.id)}
+                >
+                  <Text style={[styles.upvoteArrow, item.userUpvoted && styles.upvoteArrowActive]}>
+                    ▲
+                  </Text>
+                  <Text style={[styles.upvotesText, item.userUpvoted && styles.upvotesTextActive]}>
+                    {item.upvotesCount}
+                  </Text>
+                </TouchableOpacity>
               </View>
-              <Text style={styles.upvotesText}>▲ {item.upvotesCount}</Text>
-            </View>
 
-            <Text style={styles.profileTitle}>{item.name}</Text>
-            <Text style={styles.iemTargetModel}>Tuned for: {item.iemName}</Text>
-            <Text style={styles.profileDescription}>{item.description}</Text>
+              <Text style={styles.profileTitle}>{item.name}</Text>
+              <View style={styles.targetIEMRow}>
+                <Text style={styles.iemTargetModel}>Tuned for: {item.iemName}</Text>
+                <Text style={styles.creatorAttribution}>
+                  By @{item.creatorName || 'Anonymous'}
+                </Text>
+              </View>
 
-            <View style={styles.metaRow}>
-              <Text style={styles.metaText}>
-                Rig: {item.sourceAttribution || 'N/A'}
+              <Text style={styles.profileDescription} numberOfLines={2}>
+                {item.description}
               </Text>
-              <Text style={styles.metaText}>
-                Preamp: {item.preampDb > 0 ? `+${item.preampDb}` : item.preampDb} dB
-              </Text>
-              <Text style={styles.metaText}>
-                {item.filters.length} Filter Bands
-              </Text>
-            </View>
 
-            <View style={styles.actionRow}>
-              <Button
-                label="INSPECT FILTERS"
-                variant="ghost"
-                size="sm"
-                onPress={() => setInspectProfile(item)}
-              />
-              <Button
-                label={isCurrent ? 'CURRENTLY ACTIVE' : 'LOAD TO EQ'}
-                variant={isCurrent ? 'primary' : 'outline'}
-                size="sm"
-                disabled={isCurrent}
-                onPress={() => handleApplyProfile(item)}
-              />
-            </View>
-          </Card>
-        );
-      })}
+              {/* Rating & Review summary pill */}
+              <View style={styles.ratingRow}>
+                <TouchableOpacity
+                  style={styles.ratingBadge}
+                  onPress={() => setReviewsProfileTarget(item)}
+                >
+                  <Text style={styles.starText}>★</Text>
+                  <Text style={styles.ratingAvgText}>
+                    {item.ratingAverage ? item.ratingAverage.toFixed(1) : 'New'}
+                  </Text>
+                  <Text style={styles.ratingCountText}>
+                    ({item.ratingCount || 0} reviews)
+                  </Text>
+                </TouchableOpacity>
+
+                <Text style={styles.metaPreamp}>
+                  Preamp: {item.preampDb > 0 ? `+${item.preampDb}` : item.preampDb} dB
+                </Text>
+                <Text style={styles.metaBands}>{item.filters.length} Bands</Text>
+              </View>
+
+              <View style={styles.actionRow}>
+                <Button
+                  label="REVIEWS"
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => setReviewsProfileTarget(item)}
+                />
+                <Button
+                  label="INSPECT"
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => setInspectProfile(item)}
+                />
+                <Button
+                  label={isCurrent ? 'CURRENTLY ACTIVE' : 'LOAD TO EQ'}
+                  variant={isCurrent ? 'primary' : 'outline'}
+                  size="sm"
+                  disabled={isCurrent}
+                  onPress={() => handleApplyProfile(item)}
+                />
+              </View>
+            </Card>
+          );
+        })
+      )}
 
       {/* Profile Detail Inspector Modal */}
       {inspectProfile && (
@@ -254,6 +271,9 @@ export default function DiscoverScreen() {
                 <View style={styles.flexOne}>
                   <Text style={styles.modalProfileName}>{inspectProfile.name}</Text>
                   <Text style={styles.modalProfileIEM}>Target: {inspectProfile.iemName}</Text>
+                  <Text style={styles.modalCreatorName}>
+                    Creator: @{inspectProfile.creatorName || 'Acoustics Lab'}
+                  </Text>
                 </View>
                 <TouchableOpacity onPress={() => setInspectProfile(null)} style={styles.closeBtn}>
                   <Text style={styles.closeBtnText}>✕</Text>
@@ -261,12 +281,48 @@ export default function DiscoverScreen() {
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
+                {/* Scientific Disclaimer for Community Presets */}
+                {!inspectProfile.isVerified && (
+                  <View style={styles.disclaimerBox}>
+                    <Text style={styles.disclaimerIcon}>⚠️</Text>
+                    <Text style={styles.disclaimerText}>
+                      <Text style={styles.disclaimerBold}>Scientific Notice:</Text> This is a user-submitted community profile.
+                      It has not been verified on an IEC 60318-4 acoustic coupler rig. Listen at comfortable gain levels.
+                    </Text>
+                  </View>
+                )}
+
                 <Text style={styles.modalDescription}>{inspectProfile.description}</Text>
 
                 <View style={styles.modalBadgeRow}>
                   <Badge label={`Preamp ${inspectProfile.preampDb} dB`} variant="neutral" size="sm" />
                   <Badge label={inspectProfile.targetCurve || 'Custom Curve'} variant="primary" size="sm" />
                   <Badge label={inspectProfile.sourceAttribution || 'Lab'} variant="info" size="sm" />
+                </View>
+
+                {/* Ratings & Upvotes Bar inside Modal */}
+                <View style={styles.modalSocialBar}>
+                  <TouchableOpacity
+                    style={styles.modalRatingLink}
+                    onPress={() => {
+                      setReviewsProfileTarget(inspectProfile);
+                    }}
+                  >
+                    <Text style={styles.starText}>★</Text>
+                    <Text style={styles.modalRatingText}>
+                      {inspectProfile.ratingAverage ? inspectProfile.ratingAverage.toFixed(1) : 'New'} (
+                      {inspectProfile.ratingCount || 0} reviews) →
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.reportLink}
+                    onPress={() => {
+                      setReportProfileTarget(inspectProfile);
+                    }}
+                  >
+                    <Text style={styles.reportLinkText}>⚑ Report Profile</Text>
+                  </TouchableOpacity>
                 </View>
 
                 <Text style={styles.modalFilterHeading}>PARAMETRIC FILTER CASCADE</Text>
@@ -304,11 +360,69 @@ export default function DiscoverScreen() {
           </View>
         </Modal>
       )}
+
+      {/* Publish Profile Modal */}
+      <PublishProfileModal
+        visible={publishModalOpen}
+        onClose={() => setPublishModalOpen(false)}
+        initialProfile={activeProfile}
+        onSuccess={(newProfile) => {
+          setProfiles((prev) => [newProfile, ...prev]);
+        }}
+      />
+
+      {/* Report Profile Modal */}
+      {reportProfileTarget && (
+        <ReportProfileModal
+          visible={Boolean(reportProfileTarget)}
+          onClose={() => setReportProfileTarget(null)}
+          profile={reportProfileTarget}
+        />
+      )}
+
+      {/* Reviews & Feedback Modal */}
+      {reviewsProfileTarget && (
+        <ProfileReviewsModal
+          visible={Boolean(reviewsProfileTarget)}
+          onClose={() => setReviewsProfileTarget(null)}
+          profile={reviewsProfileTarget}
+          onReviewSubmitted={(updated) => {
+            setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+            if (inspectProfile && inspectProfile.id === updated.id) {
+              setInspectProfile(updated);
+            }
+          }}
+        />
+      )}
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
+  communityBanner: {
+    marginBottom: spacing.md,
+  },
+  bannerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  bannerTextCol: {
+    flex: 1,
+  },
+  bannerTitle: {
+    color: colors.primaryLight,
+    fontSize: typography.fontSizes.xs,
+    fontWeight: typography.fontWeights.bold,
+    letterSpacing: 0.5,
+  },
+  bannerSubtitle: {
+    color: colors.textSecondary,
+    fontSize: typography.fontSizes.xs - 1,
+    marginTop: 2,
+    lineHeight: 14,
+  },
   searchContainer: {
     backgroundColor: '#090810',
     borderRadius: borderRadius.md,
@@ -327,6 +441,9 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginBottom: spacing.md,
   },
+  loader: {
+    marginVertical: spacing.xl,
+  },
   profileCard: {
     marginBottom: spacing.md,
   },
@@ -340,10 +457,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xs,
   },
+  upvoteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 4,
+  },
+  upvoteBtnActive: {
+    backgroundColor: 'rgba(168, 85, 247, 0.2)',
+    borderColor: colors.primary,
+  },
+  upvoteArrow: {
+    color: colors.textMuted,
+    fontSize: 10,
+  },
+  upvoteArrowActive: {
+    color: colors.primary,
+  },
   upvotesText: {
-    color: colors.primaryLight,
+    color: colors.textSecondary,
     fontSize: typography.fontSizes.xs,
     fontWeight: typography.fontWeights.bold,
+  },
+  upvotesTextActive: {
+    color: colors.primaryLight,
   },
   profileTitle: {
     color: colors.textPrimary,
@@ -351,28 +493,61 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
     marginTop: spacing.xs,
   },
+  targetIEMRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 2,
+    marginBottom: spacing.xs,
+  },
   iemTargetModel: {
     color: colors.accentCyan,
     fontSize: typography.fontSizes.xs,
     fontWeight: typography.fontWeights.medium,
-    marginTop: 2,
-    marginBottom: spacing.xs,
+  },
+  creatorAttribution: {
+    color: colors.primaryLight,
+    fontSize: typography.fontSizes.xs - 1,
+    fontWeight: typography.fontWeights.medium,
   },
   profileDescription: {
     color: colors.textSecondary,
     fontSize: typography.fontSizes.sm,
     lineHeight: typography.lineHeights.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
-  metaRow: {
+  ratingRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: spacing.xs,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     marginBottom: spacing.sm,
   },
-  metaText: {
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  starText: {
+    color: '#FACC15',
+    fontSize: 14,
+  },
+  ratingAvgText: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSizes.xs,
+    fontWeight: typography.fontWeights.bold,
+  },
+  ratingCountText: {
+    color: colors.textMuted,
+    fontSize: typography.fontSizes.xs - 1,
+  },
+  metaPreamp: {
+    color: colors.textMuted,
+    fontSize: typography.fontSizes.xs - 1,
+  },
+  metaBands: {
     color: colors.textMuted,
     fontSize: typography.fontSizes.xs - 1,
   },
@@ -398,7 +573,7 @@ const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -410,9 +585,14 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
   },
   modalProfileIEM: {
-    color: colors.primaryLight,
+    color: colors.accentCyan,
     fontSize: typography.fontSizes.xs,
     marginTop: 2,
+  },
+  modalCreatorName: {
+    color: colors.primaryLight,
+    fontSize: typography.fontSizes.xs,
+    marginTop: 1,
   },
   closeBtn: {
     padding: spacing.xs,
@@ -425,6 +605,30 @@ const styles = StyleSheet.create({
   modalScroll: {
     marginBottom: spacing.md,
   },
+  disclaimerBox: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(234, 179, 8, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(234, 179, 8, 0.3)',
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.md,
+    gap: spacing.xs,
+    alignItems: 'center',
+  },
+  disclaimerIcon: {
+    fontSize: 16,
+  },
+  disclaimerText: {
+    flex: 1,
+    color: colors.textSecondary,
+    fontSize: typography.fontSizes.xs - 1,
+    lineHeight: 15,
+  },
+  disclaimerBold: {
+    color: colors.warning,
+    fontWeight: typography.fontWeights.bold,
+  },
   modalDescription: {
     color: colors.textSecondary,
     fontSize: typography.fontSizes.sm,
@@ -436,6 +640,34 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.xs,
     marginBottom: spacing.md,
+  },
+  modalSocialBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.md,
+  },
+  modalRatingLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  modalRatingText: {
+    color: colors.primaryLight,
+    fontSize: typography.fontSizes.xs,
+    fontWeight: typography.fontWeights.semibold,
+  },
+  reportLink: {
+    paddingVertical: 2,
+  },
+  reportLinkText: {
+    color: colors.textMuted,
+    fontSize: typography.fontSizes.xs,
   },
   modalFilterHeading: {
     color: colors.textMuted,

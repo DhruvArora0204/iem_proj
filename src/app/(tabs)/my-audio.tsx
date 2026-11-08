@@ -8,6 +8,7 @@ import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
 import { IEMPickerModal } from '@/features/iem/components/IEMPickerModal';
 import { AuthModal } from '@/features/auth/components/AuthModal';
+import { PublishProfileModal } from '@/features/community/components/PublishProfileModal';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import { spacing, borderRadius } from '@/theme/spacing';
@@ -36,6 +37,7 @@ export default function MyAudioScreen() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportJson, setExportJson] = useState('');
+  const [publishTarget, setPublishTarget] = useState<EQProfile | null>(null);
 
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     state: 'idle',
@@ -300,6 +302,12 @@ export default function MyAudioScreen() {
 
               <View style={styles.cardActions}>
                 <Button
+                  label="SHARE"
+                  variant="secondary"
+                  size="sm"
+                  onPress={() => setPublishTarget(p)}
+                />
+                <Button
                   label="DELETE"
                   variant="danger"
                   size="sm"
@@ -330,6 +338,19 @@ export default function MyAudioScreen() {
         visible={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
       />
+
+      {/* Community Publish Modal */}
+      {publishTarget && (
+        <PublishProfileModal
+          visible={Boolean(publishTarget)}
+          onClose={() => setPublishTarget(null)}
+          initialProfile={publishTarget}
+          onSuccess={() => {
+            setPublishTarget(null);
+            Alert.alert('Published', 'Your preset has been shared to the community catalog!');
+          }}
+        />
+      )}
 
       {/* Export JSON Modal */}
       <Modal visible={isExportModalOpen} transparent animationType="slide" onRequestClose={() => setIsExportModalOpen(false)}>

@@ -75,6 +75,7 @@ npx tsx --test tests/dsp/signalGenerator.test.ts
 npx tsx --test tests/dsp/biquadCascadeProcessor.test.ts
 npx tsx --test tests/recommendation/recommendationEngine.test.ts
 npx tsx --test tests/backend/syncAndAuth.test.ts
+npx tsx --test tests/community/communityService.test.ts
 npx tsx --test tests/store/useAudioStore.test.ts
 
 # 4.3 TypeScript Static Type Check (Strict Mode, 0 errors expected)
@@ -142,3 +143,4 @@ While 'npm start' or 'npx expo start' is running in the terminal:
 - Press 'j' -> Open Chrome DevTools debugger
 - Press 'Ctrl + C' -> Stop dev server
 ================================================================================
+

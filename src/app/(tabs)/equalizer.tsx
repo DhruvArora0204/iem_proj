@@ -10,6 +10,7 @@ import { MacroKnobsGrid } from '@/features/equalizer/components/MacroKnobsGrid';
 import { AudioTestBench } from '@/features/audio-player/components/AudioTestBench';
 import { FilterEditModal } from '@/features/equalizer/components/FilterEditModal';
 import { SaveProfileModal } from '@/features/presets/components/SaveProfileModal';
+import { PublishProfileModal } from '@/features/community/components/PublishProfileModal';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import { spacing, borderRadius } from '@/theme/spacing';
@@ -37,6 +38,7 @@ export default function EqualizerScreen() {
   const [selectedFilter, setSelectedFilter] = useState<BiquadFilterConfig | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
 
   // Calculate if maximum positive peak exceeds available headroom
   const maxGainBoost = Math.max(0, ...filters.filter((f) => f.enabled).map((f) => f.gain));
@@ -243,11 +245,18 @@ export default function EqualizerScreen() {
       {/* Floating Bottom Action Bar */}
       <View style={styles.bottomBar}>
         <Button
-          label="SAVE CUSTOM PROFILE"
-          variant="primary"
-          size="lg"
+          label="SAVE PROFILE"
+          variant="secondary"
+          size="md"
           style={styles.flexOne}
           onPress={() => setIsSaveModalOpen(true)}
+        />
+        <Button
+          label="SHARE TO COMMUNITY"
+          variant="primary"
+          size="md"
+          style={styles.flexOne}
+          onPress={() => setIsPublishModalOpen(true)}
         />
       </View>
 
@@ -275,6 +284,22 @@ export default function EqualizerScreen() {
       <SaveProfileModal
         visible={isSaveModalOpen}
         onClose={() => setIsSaveModalOpen(false)}
+      />
+
+      {/* Community Publish Modal */}
+      <PublishProfileModal
+        visible={isPublishModalOpen}
+        onClose={() => setIsPublishModalOpen(false)}
+        initialProfile={{
+          ...activeProfile,
+          iemId: activeIEM.id,
+          iemName: `${activeIEM.manufacturerName} ${activeIEM.name}`,
+          filters,
+          preampDb,
+        }}
+        onSuccess={() => {
+          setIsPublishModalOpen(false);
+        }}
       />
     </ScreenContainer>
   );
