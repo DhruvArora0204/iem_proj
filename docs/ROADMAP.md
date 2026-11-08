@@ -131,14 +131,14 @@ This document outlines the phased development roadmap for **Audiophile**. Develo
 ---
 
 ### PHASE 5 — Backend & Authentication
-* **Status**: Queued
+* **Status**: Complete
 * **Objectives**:
   - Connect live Supabase PostgreSQL backend with authentication and offline sync.
 * **Implementation Tasks**:
-  1. Apply PostgreSQL schema migrations and RLS policies.
-  2. Implement Supabase Auth (Email & OAuth).
-  3. Implement offline SQLite sync engine with automatic conflict resolution.
-  4. Persist user IEM ownership, custom profiles, and favorites.
+  1. Apply PostgreSQL schema migrations and RLS policies (`supabase/migrations/20260301000000_initial_schema.sql`).
+  2. Implement Supabase Auth (`src/services/supabase/auth.ts`, `src/features/auth/components/AuthModal.tsx`).
+  3. Implement offline SQLite sync engine with automatic conflict resolution (`src/services/sync/syncManager.ts`).
+  4. Persist user IEM ownership, custom profiles, and favorites with reactive sync status badge.
 * **Acceptance Criteria**:
   - User can register, authenticate, and manage custom profiles across devices.
   - Full application functions offline, automatically synchronizing changes when reconnected.

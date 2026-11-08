@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, Alert, Modal, TextInput, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, Alert, Modal, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Header } from '@/components/layout/Header';
@@ -7,11 +7,14 @@ import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
 import { IEMPickerModal } from '@/features/iem/components/IEMPickerModal';
+import { AuthModal } from '@/features/auth/components/AuthModal';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import { spacing, borderRadius } from '@/theme/spacing';
 import { useAudioStore } from '@/store/useAudioStore';
+import { useUserStore } from '@/store/useUserStore';
 import { getLocalIEMs } from '@/services/local-db/sqlite';
+import { SyncManager, SyncStatus } from '@/services/sync/syncManager';
 import { isSupabaseConfigured } from '@/services/supabase/client';
 import type { IEMModel, EQProfile } from '@/core/types/audio';
 
@@ -26,10 +29,30 @@ export default function MyAudioScreen() {
     setActiveProfile,
   } = useAudioStore();
 
+  const { user, isAuthenticated, initializeAuth } = useUserStore();
+
   const [iems, setIems] = useState<IEMModel[]>([]);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportJson, setExportJson] = useState('');
+
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
+    state: 'idle',
+    lastSyncedAt: null,
+    pendingUploadsCount: 0,
+    errorMessage: null,
+  });
+
+  const syncManager = SyncManager.getInstance();
+
+  useEffect(() => {
+    initializeAuth();
+    const unsub = syncManager.subscribe((status) => {
+      setSyncStatus(status);
+    });
+    return () => unsub();
+  }, []);
 
   // Local custom profiles list
   const [savedProfiles, setSavedProfiles] = useState<EQProfile[]>([
@@ -66,6 +89,10 @@ export default function MyAudioScreen() {
     }
     loadIEMs();
   }, [activeIEM]);
+
+  const handleTriggerSync = async () => {
+    await syncManager.triggerSync(isAuthenticated ? user.id : undefined);
+  };
 
   const handleOpenExport = () => {
     const config = {
@@ -111,27 +138,73 @@ export default function MyAudioScreen() {
         subtitle="Hardware Collection & Custom Tuning Vault"
       />
 
-      {/* Cloud & Local DB Sync Status */}
-      <Card variant="elevated" style={styles.syncCard}>
+      {/* User Account & Cloud Sync Banner */}
+      <Card variant="elevated" style={styles.accountCard}>
         <View style={styles.rowBetween}>
-          <Text style={styles.syncTitle}>LOCAL & CLOUD STORAGE</Text>
-          <Badge
-            label={isSupabaseConfigured ? 'CLOUD SYNC ACTIVE' : 'OFFLINE SQLITE'}
-            variant={isSupabaseConfigured ? 'success' : 'neutral'}
+          <View style={styles.userIdentityRow}>
+            <View style={styles.avatarMini}>
+              <Text style={styles.avatarMiniText}>
+                {user.displayName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View>
+              <Text style={styles.accountName}>{user.displayName}</Text>
+              <Text style={styles.accountEmail}>{user.email}</Text>
+            </View>
+          </View>
+
+          <Button
+            label={isAuthenticated ? 'ACCOUNT' : 'SIGN IN'}
+            variant={isAuthenticated ? 'secondary' : 'primary'}
             size="sm"
+            onPress={() => setIsAuthModalOpen(true)}
           />
         </View>
-        <Text style={styles.syncDescription}>
-          {isSupabaseConfigured
-            ? 'Synced to Supabase PostgreSQL cloud backup.'
-            : '100% offline mode via SQLite. All custom profiles and IEM settings persist locally.'}
-        </Text>
+
+        {/* Sync Controls */}
+        <View style={styles.syncConsoleRow}>
+          <View>
+            <View style={styles.syncStatusHeader}>
+              <View
+                style={[
+                  styles.syncDot,
+                  syncStatus.state === 'synced' && styles.syncDotGreen,
+                  syncStatus.state === 'syncing' && styles.syncDotOrange,
+                ]}
+              />
+              <Text style={styles.syncStateText}>
+                {syncStatus.state === 'synced'
+                  ? 'CLOUD BACKUP SYNCED'
+                  : syncStatus.state === 'syncing'
+                  ? 'SYNCING CHANGES...'
+                  : syncStatus.state === 'offline'
+                  ? 'OFFLINE SQLITE MODE'
+                  : 'READY TO SYNC'}
+              </Text>
+            </View>
+            <Text style={styles.syncTimeText}>
+              {syncStatus.lastSyncedAt
+                ? `Last synced ${new Date(syncStatus.lastSyncedAt).toLocaleTimeString()}`
+                : isSupabaseConfigured
+                ? 'Ready for cloud backup'
+                : '100% offline local SQLite'}
+            </Text>
+          </View>
+
+          <Button
+            label="SYNC NOW"
+            variant="outline"
+            size="sm"
+            isLoading={syncStatus.state === 'syncing'}
+            onPress={handleTriggerSync}
+          />
+        </View>
       </Card>
 
       {/* Registered IEM Collection */}
       <View style={styles.section}>
         <View style={styles.rowBetween}>
-          <Text style={styles.sectionTitle}>MY IEM COLLECTION</Text>
+          <Text style={styles.sectionTitle}>MY IEM COLLECTION ({iems.length})</Text>
           <Button
             label="+ ADD IEM"
             variant="outline"
@@ -173,6 +246,15 @@ export default function MyAudioScreen() {
               </View>
 
               <Text style={styles.iemDescription}>{iem.description}</Text>
+
+              <View style={styles.iemCardFooter}>
+                <TouchableOpacity
+                  style={styles.specsLink}
+                  onPress={() => router.push(`/iem/${iem.id}` as any)}
+                >
+                  <Text style={styles.specsLinkText}>VIEW MEASUREMENT CURVES →</Text>
+                </TouchableOpacity>
+              </View>
             </Card>
           );
         })}
@@ -243,6 +325,12 @@ export default function MyAudioScreen() {
         onSelectIEM={(selected) => setActiveIEM(selected)}
       />
 
+      {/* Auth Modal */}
+      <AuthModal
+        visible={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
+
       {/* Export JSON Modal */}
       <Modal visible={isExportModalOpen} transparent animationType="slide" onRequestClose={() => setIsExportModalOpen(false)}>
         <View style={styles.exportOverlay}>
@@ -284,7 +372,7 @@ export default function MyAudioScreen() {
 }
 
 const styles = StyleSheet.create({
-  syncCard: {
+  accountCard: {
     marginBottom: spacing.md,
   },
   rowBetween: {
@@ -293,17 +381,71 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xs,
   },
-  syncTitle: {
-    color: colors.textMuted,
-    fontSize: typography.fontSizes.xs,
-    fontWeight: typography.fontWeights.bold,
-    letterSpacing: typography.letterSpacing.widest,
+  userIdentityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  syncDescription: {
+  avatarMini: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(168, 85, 247, 0.25)',
+    borderWidth: 1,
+    borderColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
+  },
+  avatarMiniText: {
+    color: colors.primaryLight,
+    fontSize: typography.fontSizes.sm,
+    fontWeight: typography.fontWeights.bold,
+  },
+  accountName: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSizes.sm,
+    fontWeight: typography.fontWeights.bold,
+  },
+  accountEmail: {
     color: colors.textSecondary,
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.sm,
-    marginTop: 2,
+    fontSize: typography.fontSizes.xs - 1,
+  },
+  syncConsoleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    marginTop: spacing.xs,
+  },
+  syncStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  syncDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.textMuted,
+  },
+  syncDotGreen: {
+    backgroundColor: colors.success,
+  },
+  syncDotOrange: {
+    backgroundColor: colors.warning,
+  },
+  syncStateText: {
+    color: colors.primaryLight,
+    fontSize: typography.fontSizes.xs - 2,
+    fontWeight: typography.fontWeights.bold,
+    letterSpacing: typography.letterSpacing.wider,
+  },
+  syncTimeText: {
+    color: colors.textMuted,
+    fontSize: typography.fontSizes.xs - 2,
+    marginTop: 1,
   },
   section: {
     marginTop: spacing.sm,
@@ -342,6 +484,21 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.sm,
+  },
+  iemCardFooter: {
+    marginTop: spacing.xs,
+    paddingTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  specsLink: {
+    alignSelf: 'flex-start',
+  },
+  specsLinkText: {
+    color: colors.accentCyan,
+    fontSize: typography.fontSizes.xs - 1,
+    fontWeight: typography.fontWeights.bold,
+    letterSpacing: typography.letterSpacing.wide,
   },
   profileCard: {
     marginTop: spacing.sm,

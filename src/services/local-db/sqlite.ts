@@ -1,29 +1,30 @@
-import { Platform } from 'react-native';
-import * as SQLite from 'expo-sqlite';
-import { IEMModel } from '@/core/types/audio';
+import type { IEMModel } from '@/core/types/audio';
 import { IEM_CATALOG } from './iemCatalog';
 
 const DB_NAME = 'audiophile.db';
-let dbInstance: SQLite.SQLiteDatabase | null = null;
+let dbInstance: any = null;
 
-export async function getDatabase(): Promise<SQLite.SQLiteDatabase | null> {
-  if (Platform.OS === 'web') {
+export async function getDatabase(): Promise<any | null> {
+  try {
+    const { Platform } = require('react-native');
+    if (Platform.OS === 'web') {
+      return null;
+    }
+    const SQLite = require('expo-sqlite');
+    if (!dbInstance) {
+      dbInstance = await SQLite.openDatabaseAsync(DB_NAME);
+    }
+    return dbInstance;
+  } catch {
     return null;
   }
-  if (!dbInstance) {
-    dbInstance = await SQLite.openDatabaseAsync(DB_NAME);
-  }
-  return dbInstance;
 }
 
 export async function initializeLocalDatabase(): Promise<void> {
-  if (Platform.OS === 'web') {
-    console.info('[SQLite] Web environment initialized with IEM catalog in-memory store.');
+  const db = await getDatabase();
+  if (!db) {
     return;
   }
-
-  const db = await getDatabase();
-  if (!db) return;
 
   await db.execAsync(`
     PRAGMA journal_mode = WAL;
@@ -79,40 +80,45 @@ export async function initializeLocalDatabase(): Promise<void> {
   await seedCatalogData(db);
 }
 
-async function seedCatalogData(db: SQLite.SQLiteDatabase): Promise<void> {
-  const countResult = await db.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM local_iems;'
-  );
-
-  if (countResult && countResult.count >= IEM_CATALOG.length) {
-    return;
-  }
-
-  for (const iem of IEM_CATALOG) {
-    await db.runAsync(
-      `INSERT OR REPLACE INTO local_iems (
-        id, manufacturer_name, model_name, driver_type, driver_count,
-        impedance_ohms, sensitivity_db_mw, release_year, description, is_saved_to_library, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-      [
-        iem.id,
-        iem.manufacturerName,
-        iem.name,
-        iem.driverType,
-        iem.driverCount,
-        iem.impedanceOhms,
-        iem.sensitivityDbMw,
-        iem.releaseYear ?? null,
-        iem.description ?? '',
-        iem.isSavedToLibrary ? 1 : 0,
-        iem.id === 'iem-1' ? 1 : 0,
-      ]
+async function seedCatalogData(db: any): Promise<void> {
+  try {
+    const countResult = await db.getFirstAsync(
+      'SELECT COUNT(*) as count FROM local_iems;'
     );
+
+    if (countResult && countResult.count >= IEM_CATALOG.length) {
+      return;
+    }
+
+    for (const iem of IEM_CATALOG) {
+      await db.runAsync(
+        `INSERT OR REPLACE INTO local_iems (
+          id, manufacturer_name, model_name, driver_type, driver_count,
+          impedance_ohms, sensitivity_db_mw, release_year, description, is_saved_to_library, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        [
+          iem.id,
+          iem.manufacturerName,
+          iem.name,
+          iem.driverType,
+          iem.driverCount,
+          iem.impedanceOhms,
+          iem.sensitivityDbMw,
+          iem.releaseYear ?? null,
+          iem.description ?? '',
+          iem.isSavedToLibrary ? 1 : 0,
+          iem.id === 'iem-1' ? 1 : 0,
+        ]
+      );
+    }
+  } catch (err) {
+    console.warn('[SQLite] Seed catalog error:', err);
   }
 }
 
 export async function getLocalIEMs(): Promise<IEMModel[]> {
-  if (Platform.OS === 'web') {
+  const db = await getDatabase();
+  if (!db) {
     return IEM_CATALOG.map((i) => ({
       id: i.id,
       manufacturerName: i.manufacturerName,
@@ -128,36 +134,25 @@ export async function getLocalIEMs(): Promise<IEMModel[]> {
     }));
   }
 
-  const db = await getDatabase();
-  if (!db) {
+  try {
+    const rows = await db.getAllAsync(
+      'SELECT * FROM local_iems ORDER BY manufacturer_name, model_name;'
+    );
+
+    return rows.map((r: any) => ({
+      id: r.id,
+      manufacturerName: r.manufacturer_name,
+      name: r.model_name,
+      driverType: r.driver_type,
+      driverCount: r.driver_count,
+      impedanceOhms: r.impedance_ohms,
+      sensitivityDbMw: r.sensitivity_db_mw,
+      releaseYear: r.release_year ?? undefined,
+      description: r.description ?? undefined,
+      imageUrl: r.image_url ?? undefined,
+      isSavedToLibrary: Boolean(r.is_saved_to_library),
+    }));
+  } catch {
     return IEM_CATALOG;
   }
-
-  const rows = await db.getAllAsync<{
-    id: string;
-    manufacturer_name: string;
-    model_name: string;
-    driver_type: string;
-    driver_count: number;
-    impedance_ohms: number;
-    sensitivity_db_mw: number;
-    release_year: number | null;
-    description: string | null;
-    image_url: string | null;
-    is_saved_to_library: number;
-  }>('SELECT * FROM local_iems ORDER BY manufacturer_name, model_name;');
-
-  return rows.map((r) => ({
-    id: r.id,
-    manufacturerName: r.manufacturer_name,
-    name: r.model_name,
-    driverType: r.driver_type,
-    driverCount: r.driver_count,
-    impedanceOhms: r.impedance_ohms,
-    sensitivityDbMw: r.sensitivity_db_mw,
-    releaseYear: r.release_year ?? undefined,
-    description: r.description ?? undefined,
-    imageUrl: r.image_url ?? undefined,
-    isSavedToLibrary: Boolean(r.is_saved_to_library),
-  }));
 }

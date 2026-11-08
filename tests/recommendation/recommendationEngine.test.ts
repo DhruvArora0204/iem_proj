@@ -86,3 +86,4 @@ describe('Recommendation & Compensation Engine', () => {
     assert.equal(result.profile.isVerified, false);
   });
 });
+
