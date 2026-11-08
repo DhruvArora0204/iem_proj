@@ -134,3 +134,4 @@ describe('BiquadCascadeProcessor', () => {
     assert.equal(result.hasClipped, false, 'Preamp prevented clipping');
   });
 });
+

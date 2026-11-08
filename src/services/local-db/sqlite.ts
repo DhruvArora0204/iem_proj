@@ -1,73 +1,10 @@
 import { Platform } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import { IEMModel } from '@/core/types/audio';
+import { IEM_CATALOG } from './iemCatalog';
 
 const DB_NAME = 'audiophile.db';
 let dbInstance: SQLite.SQLiteDatabase | null = null;
-
-// In-memory fallback for web environment
-let inMemoryIEMs: IEMModel[] = [
-  {
-    id: 'iem-1',
-    manufacturerName: 'Moondrop',
-    name: 'Blessing 3',
-    driverType: '2DD + 4BA Hybrid',
-    driverCount: 6,
-    impedanceOhms: 14.8,
-    sensitivityDbMw: 120.0,
-    releaseYear: 2023,
-    description: 'Dual dynamic + quad balanced armature hybrid benchmark.',
-    isSavedToLibrary: true,
-  },
-  {
-    id: 'iem-2',
-    manufacturerName: 'Truthear',
-    name: 'Zero: RED',
-    driverType: 'Dual Dynamic (10mm + 7.8mm)',
-    driverCount: 2,
-    impedanceOhms: 17.5,
-    sensitivityDbMw: 117.5,
-    releaseYear: 2023,
-    description: 'Crinacle collaboration tuned strictly to the modified Harman in-ear target with 10-ohm bass adapter.',
-    isSavedToLibrary: true,
-  },
-  {
-    id: 'iem-3',
-    manufacturerName: '7Hz',
-    name: 'Timeless',
-    driverType: '14.2mm Planar Magnetic',
-    driverCount: 1,
-    impedanceOhms: 14.8,
-    sensitivityDbMw: 104.0,
-    releaseYear: 2021,
-    description: 'Full-range planar magnetic IEM with unmatched transient speed and ultra-low THD.',
-    isSavedToLibrary: false,
-  },
-  {
-    id: 'iem-4',
-    manufacturerName: 'Sennheiser',
-    name: 'IE 200',
-    driverType: '7mm TrueResponse Dynamic',
-    driverCount: 1,
-    impedanceOhms: 18.0,
-    sensitivityDbMw: 119.0,
-    releaseYear: 2023,
-    description: 'Compact single dynamic driver with dual-tuning nozzle system.',
-    isSavedToLibrary: false,
-  },
-  {
-    id: 'iem-5',
-    manufacturerName: 'Tangzu',
-    name: 'Wan\'er S.G',
-    driverType: '10mm PET Dynamic',
-    driverCount: 1,
-    impedanceOhms: 20.0,
-    sensitivityDbMw: 107.0,
-    releaseYear: 2022,
-    description: 'Budget reference IEM with smooth treble and natural midrange timbre.',
-    isSavedToLibrary: false,
-  },
-];
 
 export async function getDatabase(): Promise<SQLite.SQLiteDatabase | null> {
   if (Platform.OS === 'web') {
@@ -81,7 +18,7 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase | null> {
 
 export async function initializeLocalDatabase(): Promise<void> {
   if (Platform.OS === 'web') {
-    console.info('[SQLite] Running in web preview mode with in-memory store.');
+    console.info('[SQLite] Web environment initialized with IEM catalog in-memory store.');
     return;
   }
 
@@ -139,21 +76,21 @@ export async function initializeLocalDatabase(): Promise<void> {
     );
   `);
 
-  await seedDefaultDataIfEmpty(db);
+  await seedCatalogData(db);
 }
 
-async function seedDefaultDataIfEmpty(db: SQLite.SQLiteDatabase): Promise<void> {
+async function seedCatalogData(db: SQLite.SQLiteDatabase): Promise<void> {
   const countResult = await db.getFirstAsync<{ count: number }>(
     'SELECT COUNT(*) as count FROM local_iems;'
   );
 
-  if (countResult && countResult.count > 0) {
+  if (countResult && countResult.count >= IEM_CATALOG.length) {
     return;
   }
 
-  for (const iem of inMemoryIEMs) {
+  for (const iem of IEM_CATALOG) {
     await db.runAsync(
-      `INSERT INTO local_iems (
+      `INSERT OR REPLACE INTO local_iems (
         id, manufacturer_name, model_name, driver_type, driver_count,
         impedance_ohms, sensitivity_db_mw, release_year, description, is_saved_to_library, is_active
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
@@ -176,11 +113,25 @@ async function seedDefaultDataIfEmpty(db: SQLite.SQLiteDatabase): Promise<void> 
 
 export async function getLocalIEMs(): Promise<IEMModel[]> {
   if (Platform.OS === 'web') {
-    return inMemoryIEMs;
+    return IEM_CATALOG.map((i) => ({
+      id: i.id,
+      manufacturerName: i.manufacturerName,
+      name: i.name,
+      driverType: i.driverType,
+      driverCount: i.driverCount,
+      impedanceOhms: i.impedanceOhms,
+      sensitivityDbMw: i.sensitivityDbMw,
+      releaseYear: i.releaseYear,
+      description: i.description,
+      imageUrl: i.imageUrl,
+      isSavedToLibrary: i.isSavedToLibrary,
+    }));
   }
 
   const db = await getDatabase();
-  if (!db) return inMemoryIEMs;
+  if (!db) {
+    return IEM_CATALOG;
+  }
 
   const rows = await db.getAllAsync<{
     id: string;

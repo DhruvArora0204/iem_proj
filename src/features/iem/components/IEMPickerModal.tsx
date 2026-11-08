@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import { spacing, borderRadius } from '@/theme/spacing';
@@ -29,6 +30,7 @@ export const IEMPickerModal: React.FC<IEMPickerModalProps> = ({
   onClose,
   onSelectIEM,
 }) => {
+  const router = useRouter();
   const { activeIEM, setActiveIEM } = useAudioStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDriverTab, setSelectedDriverTab] = useState<string>('All');
@@ -140,6 +142,15 @@ export const IEMPickerModal: React.FC<IEMPickerModalProps> = ({
                   <Text style={styles.description}>{iem.description}</Text>
 
                   <View style={styles.actionRow}>
+                    <Button
+                      label="SPECS & CURVE"
+                      variant="ghost"
+                      size="sm"
+                      onPress={() => {
+                        onClose();
+                        router.push(`/iem/${iem.id}` as any);
+                      }}
+                    />
                     <Button
                       label={isCurrent ? 'SELECTED' : 'SELECT TRANSDUCER'}
                       variant={isCurrent ? 'primary' : 'outline'}

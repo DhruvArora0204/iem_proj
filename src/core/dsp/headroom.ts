@@ -49,3 +49,4 @@ export function calculateHeadroomMetrics(
     effectiveHeadroomDb: Math.round(effectiveHeadroomDb * 10) / 10,
   };
 }
+

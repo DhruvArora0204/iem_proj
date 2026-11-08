@@ -166,3 +166,4 @@ export class SignalGenerator {
     return `data:audio/wav;base64,${base64}`;
   }
 }
+
