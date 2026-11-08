@@ -89,3 +89,4 @@ export interface ConnectedDeviceState {
   isExternalDAC: boolean;
   sampleRate: number;
 }
+

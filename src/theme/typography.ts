@@ -36,3 +36,4 @@ export const typography = {
     widest: 2.0, // Used for audio lab titles and category labels
   },
 } as const;
+

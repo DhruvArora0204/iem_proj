@@ -68,3 +68,4 @@ const styles = StyleSheet.create({
     letterSpacing: typography.letterSpacing.wide,
   },
 });
+

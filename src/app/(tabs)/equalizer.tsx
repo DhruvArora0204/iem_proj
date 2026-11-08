@@ -1,14 +1,19 @@
-import React from 'react';
-import { StyleSheet, View, Text, Switch } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, Text, Switch, TouchableOpacity } from 'react-native';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { Header } from '@/components/layout/Header';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
+import { FrequencyResponseGraph } from '@/components/audio/FrequencyResponseGraph';
+import { MacroKnobsGrid } from '@/features/equalizer/components/MacroKnobsGrid';
+import { FilterEditModal } from '@/features/equalizer/components/FilterEditModal';
+import { SaveProfileModal } from '@/features/presets/components/SaveProfileModal';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
-import { spacing } from '@/theme/spacing';
+import { spacing, borderRadius } from '@/theme/spacing';
 import { useAudioStore } from '@/store/useAudioStore';
+import type { BiquadFilterConfig } from '@/core/types/audio';
 
 export default function EqualizerScreen() {
   const {
@@ -20,58 +25,132 @@ export default function EqualizerScreen() {
     isAutoPreampEnabled,
     toggleBypass,
     toggleFilter,
+    updateFilter,
+    addFilter,
+    removeFilter,
     setAutoPreamp,
     setPreamp,
     resetToFlat,
   } = useAudioStore();
 
+  const [selectedFilter, setSelectedFilter] = useState<BiquadFilterConfig | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+
+  // Calculate if maximum positive peak exceeds available headroom
+  const maxGainBoost = Math.max(0, ...filters.filter((f) => f.enabled).map((f) => f.gain));
+  const effectivePeak = maxGainBoost + preampDb;
+  const isClippingRisk = effectivePeak > 0.05 && !isBypassed;
+
+  const handleOpenFilterEdit = (filterId: string) => {
+    const target = filters.find((f) => f.id === filterId);
+    if (target) {
+      setSelectedFilter(target);
+      setIsEditModalOpen(true);
+    }
+  };
+
+  const handleAddNewBand = () => {
+    const newBandId = `filter-${Date.now()}`;
+    const newBand: BiquadFilterConfig = {
+      id: newBandId,
+      type: 'peak',
+      frequency: 2500,
+      gain: 2.0,
+      q: 1.4,
+      enabled: true,
+    };
+    addFilter(newBand);
+    setSelectedFilter(newBand);
+    setIsEditModalOpen(true);
+  };
+
+  const selectedBandIndex = selectedFilter
+    ? filters.findIndex((f) => f.id === selectedFilter.id)
+    : 0;
+
   return (
     <ScreenContainer>
       <Header
         title="PARAMETRIC EQ"
-        subtitle={`Calibrated for ${activeIEM.manufacturerName} ${activeIEM.name}`}
+        subtitle={`Calibrated Studio Tuning for ${activeIEM.manufacturerName} ${activeIEM.name}`}
+        showLabBadge
       />
 
-      {/* Profile & Master Headroom Bar */}
-      <Card variant="elevated" style={styles.topCard}>
+      {/* Profile & Master Headroom Console */}
+      <Card variant="elevated" style={styles.consoleCard}>
         <View style={styles.rowBetween}>
-          <View>
+          <View style={styles.profileMetaColumn}>
             <Text style={styles.profileTitle}>{activeProfile.name}</Text>
             <Text style={styles.profileTarget}>
-              Target: {activeProfile.targetCurve || 'Custom Flat'}
+              Reference Curve: {activeProfile.targetCurve || 'Custom Flat'}
             </Text>
           </View>
-          <Badge
-            label={isBypassed ? 'BYPASSED' : 'EQ ACTIVE'}
-            variant={isBypassed ? 'warning' : 'success'}
-          />
+          <View style={styles.headerRightActions}>
+            <Button
+              label={isBypassed ? 'EQ BYPASS' : 'EQ ACTIVE'}
+              variant={isBypassed ? 'danger' : 'primary'}
+              size="sm"
+              onPress={toggleBypass}
+            />
+          </View>
         </View>
 
-        <View style={styles.headroomRow}>
+        {/* Headroom / Preamp Stage */}
+        <View style={styles.headroomConsole}>
           <View>
-            <Text style={styles.headroomLabel}>PREAMP ATTENUATION</Text>
-            <Text style={styles.headroomValue}>
+            <View style={styles.headroomLabelRow}>
+              <Text style={styles.headroomLabel}>PREAMP GAIN</Text>
+              {isClippingRisk && (
+                <Badge label="CLIPPING RISK (>0 dBFS)" variant="danger" size="sm" />
+              )}
+            </View>
+            <Text
+              style={[
+                styles.headroomValue,
+                isClippingRisk && styles.headroomValueDanger,
+              ]}
+            >
               {preampDb > 0 ? `+${preampDb.toFixed(1)}` : preampDb.toFixed(1)} dB
             </Text>
           </View>
-          <View style={styles.controlsRow}>
+
+          <View style={styles.preampButtonRow}>
             <Button
-              label="-0.5"
+              label="-1.0"
               size="sm"
               variant="secondary"
-              onPress={() => setPreamp(preampDb - 0.5)}
+              onPress={() => setPreamp(preampDb - 1.0)}
             />
             <Button
-              label="+0.5"
+              label="-0.2"
               size="sm"
               variant="secondary"
-              onPress={() => setPreamp(preampDb + 0.5)}
+              onPress={() => setPreamp(preampDb - 0.2)}
+            />
+            <Button
+              label="+0.2"
+              size="sm"
+              variant="secondary"
+              onPress={() => setPreamp(preampDb + 0.2)}
+            />
+            <Button
+              label="+1.0"
+              size="sm"
+              variant="secondary"
+              onPress={() => setPreamp(preampDb + 1.0)}
             />
           </View>
         </View>
 
-        <View style={styles.toggleRow}>
-          <Text style={styles.toggleText}>Auto-Preamp Clipping Prevention</Text>
+        {/* Auto-Preamp Switch */}
+        <View style={styles.autoPreampRow}>
+          <View>
+            <Text style={styles.autoPreampTitle}>Auto-Preamp Clipping Guard</Text>
+            <Text style={styles.autoPreampSubtitle}>
+              Automatically offsets gain to prevent digital overs
+            </Text>
+          </View>
           <Switch
             value={isAutoPreampEnabled}
             onValueChange={setAutoPreamp}
@@ -81,110 +160,135 @@ export default function EqualizerScreen() {
         </View>
       </Card>
 
-      {/* Frequency Response Graph Preview Placeholder */}
-      <Card style={styles.graphCard}>
-        <View style={styles.graphHeader}>
-          <Text style={styles.graphTitle}>FREQUENCY RESPONSE (20 Hz - 20 kHz)</Text>
-          <Badge label="SKIA DSP ACCELERATED" variant="primary" size="sm" />
-        </View>
+      {/* Interactive Frequency Response Graph */}
+      <FrequencyResponseGraph
+        filters={filters}
+        preampDb={preampDb}
+        isBypassed={isBypassed}
+        selectedFilterId={selectedFilter?.id}
+        onFilterChange={(id, updates) => updateFilter(id, updates)}
+        onSelectFilter={handleOpenFilterEdit}
+        showHarmanTarget
+      />
 
-        <View style={styles.graphCanvasPlaceholder}>
-          <View style={styles.centerBox}>
-            <Text style={styles.graphPlaceholderText}>
-              Interactive Spline Curve Graph
-            </Text>
-            <Text style={styles.graphPlaceholderSubtext}>
-              {filters.filter((f) => f.enabled).length} Active Biquad IIR Nodes Ready
-            </Text>
-          </View>
-        </View>
-      </Card>
+      {/* Tactile Macro Dials */}
+      <MacroKnobsGrid />
 
-      {/* Filter Band List */}
-      <View style={styles.bandSection}>
+      {/* Parametric Bands Manager */}
+      <View style={styles.bandsSection}>
         <View style={styles.rowBetween}>
-          <Text style={styles.sectionTitle}>PARAMETRIC FILTER BANDS</Text>
-          <Button
-            label="RESET TO FLAT"
-            variant="ghost"
-            size="sm"
-            onPress={resetToFlat}
-          />
+          <Text style={styles.sectionTitle}>PARAMETRIC FILTER CASCADE</Text>
+          <View style={styles.bandActionGroup}>
+            <Button
+              label="+ ADD BAND"
+              variant="outline"
+              size="sm"
+              onPress={handleAddNewBand}
+            />
+            <Button
+              label="RESET"
+              variant="ghost"
+              size="sm"
+              onPress={resetToFlat}
+            />
+          </View>
         </View>
 
         {filters.map((band, index) => (
           <Card key={band.id} style={styles.bandCard}>
             <View style={styles.bandHeader}>
-              <View style={styles.bandIndexRow}>
-                <View style={styles.bandIndexBadge}>
-                  <Text style={styles.bandIndexText}>{index + 1}</Text>
+              <TouchableOpacity
+                style={styles.bandSelectableArea}
+                onPress={() => handleOpenFilterEdit(band.id)}
+              >
+                <View style={styles.bandBadge}>
+                  <Text style={styles.bandBadgeText}>{index + 1}</Text>
                 </View>
-                <Text style={styles.bandType}>
-                  {band.type.toUpperCase().replace('_', ' ')}
-                </Text>
-              </View>
+                <View>
+                  <Text style={styles.bandType}>
+                    {band.type.toUpperCase().replace('_', ' ')}
+                  </Text>
+                  <Text style={styles.bandQuickReadout}>
+                    {band.frequency >= 1000
+                      ? `${(band.frequency / 1000).toFixed(2)} kHz`
+                      : `${band.frequency} Hz`}{' '}
+                    | {band.gain > 0 ? `+${band.gain.toFixed(1)}` : band.gain.toFixed(1)} dB | Q {band.q.toFixed(2)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
 
-              <Switch
-                value={band.enabled}
-                onValueChange={() => toggleFilter(band.id)}
-                thumbColor={band.enabled ? colors.primary : colors.textMuted}
-                trackColor={{ false: colors.border, true: 'rgba(168, 85, 247, 0.4)' }}
-              />
-            </View>
-
-            <View style={styles.bandSpecsRow}>
-              <View style={styles.specColumn}>
-                <Text style={styles.specLabel}>FREQUENCY</Text>
-                <Text style={styles.specValue}>
-                  {band.frequency >= 1000
-                    ? `${(band.frequency / 1000).toFixed(1)} kHz`
-                    : `${band.frequency} Hz`}
-                </Text>
-              </View>
-
-              <View style={styles.specColumn}>
-                <Text style={styles.specLabel}>GAIN</Text>
-                <Text
-                  style={[
-                    styles.specValue,
-                    band.gain > 0 && styles.gainPositive,
-                    band.gain < 0 && styles.gainNegative,
-                  ]}
-                >
-                  {band.gain > 0 ? `+${band.gain.toFixed(1)}` : band.gain.toFixed(1)} dB
-                </Text>
-              </View>
-
-              <View style={styles.specColumn}>
-                <Text style={styles.specLabel}>Q FACTOR</Text>
-                <Text style={styles.specValue}>{band.q.toFixed(2)}</Text>
+              <View style={styles.bandRightControls}>
+                <Button
+                  label="EDIT"
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => handleOpenFilterEdit(band.id)}
+                />
+                <Switch
+                  value={band.enabled}
+                  onValueChange={() => toggleFilter(band.id)}
+                  thumbColor={band.enabled ? colors.primary : colors.textMuted}
+                  trackColor={{ false: colors.border, true: 'rgba(168, 85, 247, 0.4)' }}
+                />
               </View>
             </View>
           </Card>
         ))}
       </View>
 
-      <View style={styles.footerActions}>
+      {/* Floating Bottom Action Bar */}
+      <View style={styles.bottomBar}>
         <Button
-          label={isBypassed ? 'ENABLE EQUALIZER' : 'BYPASS EQUALIZER'}
-          variant={isBypassed ? 'primary' : 'outline'}
+          label="SAVE CUSTOM PROFILE"
+          variant="primary"
           size="lg"
-          onPress={toggleBypass}
+          style={styles.flexOne}
+          onPress={() => setIsSaveModalOpen(true)}
         />
       </View>
+
+      {/* Filter Editor Modal */}
+      <FilterEditModal
+        visible={isEditModalOpen}
+        filter={selectedFilter}
+        bandIndex={selectedBandIndex}
+        onClose={() => setIsEditModalOpen(false)}
+        onUpdate={(updates) => {
+          if (selectedFilter) {
+            updateFilter(selectedFilter.id, updates);
+            setSelectedFilter({ ...selectedFilter, ...updates });
+          }
+        }}
+        onDelete={() => {
+          if (selectedFilter && filters.length > 1) {
+            removeFilter(selectedFilter.id);
+            setIsEditModalOpen(false);
+          }
+        }}
+      />
+
+      {/* Save Profile Modal */}
+      <SaveProfileModal
+        visible={isSaveModalOpen}
+        onClose={() => setIsSaveModalOpen(false)}
+      />
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  topCard: {
+  consoleCard: {
     marginBottom: spacing.md,
   },
   rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  profileMetaColumn: {
+    flex: 1,
+    marginRight: spacing.sm,
   },
   profileTitle: {
     color: colors.textPrimary,
@@ -192,112 +296,98 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
   },
   profileTarget: {
-    color: colors.textSecondary,
+    color: colors.accentCyan,
     fontSize: typography.fontSizes.xs,
     marginTop: 2,
   },
-  headroomRow: {
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headroomConsole: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  headroomLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   headroomLabel: {
     color: colors.textMuted,
-    fontSize: typography.fontSizes.xs,
+    fontSize: typography.fontSizes.xs - 2,
     fontWeight: typography.fontWeights.bold,
     letterSpacing: typography.letterSpacing.wider,
   },
   headroomValue: {
     color: colors.primaryLight,
-    fontSize: typography.fontSizes.base,
+    fontSize: typography.fontSizes.lg,
     fontWeight: typography.fontWeights.bold,
-    marginTop: 2,
+    marginTop: 1,
   },
-  controlsRow: {
+  headroomValueDanger: {
+    color: colors.danger,
+  },
+  preampButtonRow: {
     flexDirection: 'row',
-    gap: spacing.xs,
+    gap: 4,
   },
-  toggleRow: {
+  autoPreampRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.xs,
     paddingTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    marginTop: spacing.xs,
   },
-  toggleText: {
+  autoPreampTitle: {
     color: colors.textSecondary,
     fontSize: typography.fontSizes.xs,
+    fontWeight: typography.fontWeights.semibold,
   },
-  graphCard: {
-    marginBottom: spacing.md,
-    backgroundColor: '#07060D',
-  },
-  graphHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  graphTitle: {
+  autoPreampSubtitle: {
     color: colors.textMuted,
+    fontSize: typography.fontSizes.xs - 2,
+    marginTop: 1,
+  },
+  bandsSection: {
+    marginTop: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  sectionTitle: {
+    color: colors.textPrimary,
     fontSize: typography.fontSizes.xs,
     fontWeight: typography.fontWeights.bold,
     letterSpacing: typography.letterSpacing.widest,
   },
-  graphCanvasPlaceholder: {
-    height: 140,
-    backgroundColor: '#0C0A15',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  centerBox: {
-    alignItems: 'center',
-  },
-  graphPlaceholderText: {
-    color: colors.primaryLight,
-    fontSize: typography.fontSizes.sm,
-    fontWeight: typography.fontWeights.semibold,
-  },
-  graphPlaceholderSubtext: {
-    color: colors.textMuted,
-    fontSize: typography.fontSizes.xs,
-    marginTop: 4,
-  },
-  bandSection: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.lg,
-  },
-  sectionTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSizes.sm,
-    fontWeight: typography.fontWeights.bold,
-    letterSpacing: typography.letterSpacing.wider,
+  bandActionGroup: {
+    flexDirection: 'row',
+    gap: spacing.xs,
   },
   bandCard: {
-    marginBottom: spacing.sm,
+    marginTop: spacing.sm,
     padding: spacing.md,
   },
   bandHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.sm,
   },
-  bandIndexRow: {
+  bandSelectableArea: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
-  bandIndexBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+  bandBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: 'rgba(168, 85, 247, 0.2)',
     borderWidth: 1,
     borderColor: colors.primary,
@@ -305,7 +395,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: spacing.sm,
   },
-  bandIndexText: {
+  bandBadgeText: {
     color: colors.primaryLight,
     fontSize: typography.fontSizes.xs,
     fontWeight: typography.fontWeights.bold,
@@ -313,39 +403,22 @@ const styles = StyleSheet.create({
   bandType: {
     color: colors.textPrimary,
     fontSize: typography.fontSizes.sm,
-    fontWeight: typography.fontWeights.semibold,
-  },
-  bandSpecsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: '#090810',
-    borderRadius: 8,
-    padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  specColumn: {
-    alignItems: 'center',
-  },
-  specLabel: {
-    color: colors.textMuted,
-    fontSize: typography.fontSizes.xs - 2,
     fontWeight: typography.fontWeights.bold,
-    letterSpacing: typography.letterSpacing.wide,
-    marginBottom: 2,
   },
-  specValue: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSizes.sm,
-    fontWeight: typography.fontWeights.semibold,
+  bandQuickReadout: {
+    color: colors.textSecondary,
+    fontSize: typography.fontSizes.xs,
+    marginTop: 2,
   },
-  gainPositive: {
-    color: colors.success,
+  bandRightControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
-  gainNegative: {
-    color: colors.accentLavender,
-  },
-  footerActions: {
+  bottomBar: {
     marginBottom: spacing.xxl,
+  },
+  flexOne: {
+    flex: 1,
   },
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
@@ -6,12 +6,13 @@ import { Header } from '@/components/layout/Header';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
+import { IEMPickerModal } from '@/features/iem/components/IEMPickerModal';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import { spacing } from '@/theme/spacing';
 import { useAudioStore } from '@/store/useAudioStore';
 import { useDeviceStore } from '@/store/useDeviceStore';
-import { ScenarioType } from '@/core/types/audio';
+import type { ScenarioType } from '@/core/types/audio';
 
 const SCENARIOS: { id: ScenarioType; label: string; icon: string }[] = [
   { id: 'music_balanced', label: 'Balanced', icon: '🎵' },
@@ -31,11 +32,13 @@ export default function HomeScreen() {
     preampDb,
     isBypassed,
     activeScenario,
+    macroKnobs,
     toggleBypass,
     setScenario,
   } = useAudioStore();
 
   const { currentDevice } = useDeviceStore();
+  const [isIEMPickerOpen, setIsIEMPickerOpen] = useState(false);
 
   const activeFiltersCount = filters.filter((f) => f.enabled).length;
 
@@ -50,7 +53,7 @@ export default function HomeScreen() {
       {/* Audio Hardware & Output Route */}
       <Card variant="elevated" style={styles.sectionCard}>
         <View style={styles.cardHeaderRow}>
-          <Text style={styles.sectionLabel}>AUDIO OUTPUT TRANSPORT</Text>
+          <Text style={styles.sectionLabel}>AUDIO TRANSPORT ROUTE</Text>
           <Badge
             label={currentDevice.routeType.toUpperCase().replace('_', ' ')}
             variant="info"
@@ -64,11 +67,11 @@ export default function HomeScreen() {
         </Text>
       </Card>
 
-      {/* Active IEM Card */}
+      {/* Active IEM Card with Live Model Picker */}
       <Card variant="glow" style={styles.sectionCard}>
         <View style={styles.cardHeaderRow}>
           <Text style={styles.sectionLabel}>ACTIVE TRANSDUCER (IEM)</Text>
-          <Badge label="REFERENCE BENCH" variant="primary" size="sm" />
+          <Badge label="CALIBRATED" variant="primary" size="sm" />
         </View>
 
         <Text style={styles.iemManufacturer}>{activeIEM.manufacturerName}</Text>
@@ -78,16 +81,19 @@ export default function HomeScreen() {
           <Badge label={activeIEM.driverType} variant="neutral" size="sm" />
           <Badge label={`${activeIEM.impedanceOhms} Ω`} variant="neutral" size="sm" />
           <Badge label={`${activeIEM.sensitivityDbMw} dB/mW`} variant="neutral" size="sm" />
+          {activeIEM.releaseYear && (
+            <Badge label={`Year ${activeIEM.releaseYear}`} variant="neutral" size="sm" />
+          )}
         </View>
 
         <Text style={styles.iemDescription}>{activeIEM.description}</Text>
 
         <View style={styles.cardActionRow}>
           <Button
-            label="SWITCH IEM"
+            label="SWITCH TRANSDUCER"
             variant="outline"
             size="sm"
-            onPress={() => router.push('/(tabs)/my-audio')}
+            onPress={() => setIsIEMPickerOpen(true)}
           />
         </View>
       </Card>
@@ -115,12 +121,31 @@ export default function HomeScreen() {
           </View>
           <View style={styles.statBox}>
             <Text style={styles.statValue}>{preampDb > 0 ? `+${preampDb}` : preampDb} dB</Text>
-            <Text style={styles.statLabel}>Preamp Headroom</Text>
+            <Text style={styles.statLabel}>Preamp Gain</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>{isBypassed ? 'OFF' : 'ACTIVE'}</Text>
-            <Text style={styles.statLabel}>DSP Status</Text>
+            <Text style={styles.statValue}>{isBypassed ? 'FLAT' : 'ACTIVE'}</Text>
+            <Text style={styles.statLabel}>A/B Mode</Text>
           </View>
+        </View>
+
+        {/* Live Macro Dials Quick Status */}
+        <View style={styles.knobPillsRow}>
+          <Badge
+            label={`Bass: ${macroKnobs.bass > 0 ? `+${macroKnobs.bass}` : macroKnobs.bass} dB`}
+            variant="primary"
+            size="sm"
+          />
+          <Badge
+            label={`Clarity: ${macroKnobs.clarity > 0 ? `+${macroKnobs.clarity}` : macroKnobs.clarity} dB`}
+            variant="info"
+            size="sm"
+          />
+          <Badge
+            label={`Treble: ${macroKnobs.treble > 0 ? `+${macroKnobs.treble}` : macroKnobs.treble} dB`}
+            variant="neutral"
+            size="sm"
+          />
         </View>
 
         <View style={styles.buttonRow}>
@@ -132,7 +157,7 @@ export default function HomeScreen() {
             onPress={toggleBypass}
           />
           <Button
-            label="TUNE EQUALIZER"
+            label="EQUALIZER STUDIO"
             variant="primary"
             size="md"
             style={styles.flexButton}
@@ -164,6 +189,12 @@ export default function HomeScreen() {
           })}
         </View>
       </View>
+
+      {/* IEM Picker Modal */}
+      <IEMPickerModal
+        visible={isIEMPickerOpen}
+        onClose={() => setIsIEMPickerOpen(false)}
+      />
     </ScreenContainer>
   );
 }
@@ -248,7 +279,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#090810',
     borderRadius: 12,
     padding: spacing.md,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -265,6 +296,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: typography.fontSizes.xs,
     marginTop: 2,
+  },
+  knobPillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
   },
   buttonRow: {
     flexDirection: 'row',
