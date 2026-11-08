@@ -7,6 +7,7 @@ import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
 import { FrequencyResponseGraph } from '@/components/audio/FrequencyResponseGraph';
 import { MacroKnobsGrid } from '@/features/equalizer/components/MacroKnobsGrid';
+import { AudioTestBench } from '@/features/audio-player/components/AudioTestBench';
 import { FilterEditModal } from '@/features/equalizer/components/FilterEditModal';
 import { SaveProfileModal } from '@/features/presets/components/SaveProfileModal';
 import { colors } from '@/theme/colors';
@@ -173,6 +174,9 @@ export default function EqualizerScreen() {
 
       {/* Tactile Macro Dials */}
       <MacroKnobsGrid />
+
+      {/* In-App Acoustic DSP Test Bench */}
+      <AudioTestBench />
 
       {/* Parametric Bands Manager */}
       <View style={styles.bandsSection}>

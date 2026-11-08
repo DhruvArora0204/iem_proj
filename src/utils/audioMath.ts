@@ -226,3 +226,4 @@ export const HARMAN_TARGET_POINTS: { freq: number; gainDb: number }[] = [
   { freq: 15000, gainDb: -2.0 },
   { freq: 20000, gainDb: -6.0 },
 ];
+
