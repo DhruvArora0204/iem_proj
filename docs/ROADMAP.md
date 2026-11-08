@@ -11,8 +11,8 @@ This document outlines the phased development roadmap for **Audiophile**. Develo
 | **Phase 0** | Requirements & Architecture | Architecture, DSP specs, Data Models, Roadmap | **COMPLETE** |
 | **Phase 1** | Project Foundation | Expo + TS + Zustand + SQLite + Theme + Router | **COMPLETE** |
 | **Phase 2** | UI/UX Development | Futuristic Audio Lab design, Skia FR curve, Knobs | **COMPLETE** |
-| **Phase 3** | Equalizer DSP Engine | RBJ Biquad filters, Headroom, In-App Player | **NEXT** |
-| **Phase 4** | IEM Database & Recommendations | IEM catalog, FR measurements, Target curves | Pending |
+| **Phase 3** | Equalizer DSP Engine | RBJ Biquad filters, Headroom, In-App Player | **COMPLETE** |
+| **Phase 4** | IEM Database & Recommendations | IEM catalog, FR measurements, Target curves | **NEXT** |
 | **Phase 5** | Backend & Authentication | Supabase Postgres, RLS, Auth, Offline Sync | Pending |
 | **Phase 6** | Community Features | Profile sharing, Ratings, Attribution, Moderation | Pending |
 | **Phase 7** | Device Integration | Bluetooth/USB DAC detection, Android routing | Pending |
@@ -97,7 +97,7 @@ This document outlines the phased development roadmap for **Audiophile**. Develo
 ---
 
 ### PHASE 3 — Equalizer DSP Engine
-* **Status**: Queued
+* **Status**: Complete
 * **Objectives**:
   - Implement the core digital signal processing engine.
 * **Implementation Tasks**:
