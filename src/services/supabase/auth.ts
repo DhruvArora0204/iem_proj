@@ -99,3 +99,4 @@ export function subscribeToAuthState(callback: (user: User | null, session: Sess
 
   return () => data.subscription.unsubscribe();
 }
+

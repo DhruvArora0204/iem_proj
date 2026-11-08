@@ -1,0 +1,144 @@
+================================================================================
+AUDIOPHILE — INTELLIGENT IEM TUNING & PERSONAL AUDIO OPTIMIZATION PLATFORM
+RUN COMMANDS & DEVELOPER CLI REFERENCE
+================================================================================
+Generated: 2026-03-01
+Location: Root Directory (/RUN_COMMANDS.txt)
+Note: Keep this file updated as new commands, scripts, and build tools are added.
+
+--------------------------------------------------------------------------------
+1. PREREQUISITES
+--------------------------------------------------------------------------------
+- Node.js: >= v20.0.0 (Tested on Node.js v24.13.0)
+- Package Manager: npm (Tested on npm v11.6.2)
+- Android Studio / SDK (for native Android builds and emulator)
+- Physical Device (optional, with Expo Go or USB debugging enabled)
+
+--------------------------------------------------------------------------------
+2. INITIAL SETUP & DEPENDENCY INSTALLATION
+--------------------------------------------------------------------------------
+# Install all required packages (React Native, Expo SDK 58, Zustand, etc.)
+npm install
+
+# Check dependency compatibility with Expo SDK 58
+npx expo install --check
+
+# Fix any dependency mismatches automatically
+npx expo install --fix
+
+--------------------------------------------------------------------------------
+3. RUNNING THE APPLICATION IN DEVELOPMENT
+--------------------------------------------------------------------------------
+# 3.1 Start Interactive Expo Dev Server (Metro Bundler)
+npm start
+# or:
+npx expo start
+
+# 3.2 Run Directly in Web Browser (Chrome / Edge / Firefox)
+npm run web
+# or:
+npx expo start --web
+
+# 3.3 Run on Android Emulator or Connected USB Device
+npm run android
+# or:
+npx expo start --android
+
+# 3.4 Run on iOS Simulator (macOS only)
+npm run ios
+# or:
+npx expo start --ios
+
+# 3.5 Run with Clean Metro Cache (fixes stale bundles & module resolution)
+npx expo start -c
+# or for web:
+npx expo start --web -c
+
+# 3.6 Run in CI / Headless Mode (PowerShell on Windows)
+$env:CI="1"; npx expo start --port 8081
+
+# 3.7 Run in CI / Headless Mode (Bash / Linux / macOS)
+CI=1 npx expo start --port 8081
+
+--------------------------------------------------------------------------------
+4. TESTING & CODE QUALITY VERIFICATION
+--------------------------------------------------------------------------------
+# 4.1 Run Entire Test Suite (DSP biquads, headroom, target curves, auth, sync)
+npm test
+
+# 4.2 Run Specific Test Suites Individually
+npx tsx --test tests/audio/audioMath.test.ts
+npx tsx --test tests/dsp/biquadFilter.test.ts
+npx tsx --test tests/dsp/limiter.test.ts
+npx tsx --test tests/dsp/headroom.test.ts
+npx tsx --test tests/dsp/signalGenerator.test.ts
+npx tsx --test tests/dsp/biquadCascadeProcessor.test.ts
+npx tsx --test tests/recommendation/recommendationEngine.test.ts
+npx tsx --test tests/backend/syncAndAuth.test.ts
+npx tsx --test tests/store/useAudioStore.test.ts
+
+# 4.3 TypeScript Static Type Check (Strict Mode, 0 errors expected)
+npm run typecheck
+# or:
+npx tsc --noEmit
+
+# 4.4 Linter
+npm run lint
+
+--------------------------------------------------------------------------------
+5. EXPORTING & PRODUCTION BUILDS
+--------------------------------------------------------------------------------
+# 5.1 Export Static Web Distribution (creates /dist folder)
+npx expo export -p web
+
+# 5.2 Test / Serve Static Web Production Build Locally
+npx serve dist
+
+# 5.3 Generate Native Android Project Files (android/ folder)
+npx expo prebuild --platform android
+
+# 5.4 Compile and Run Native Android Debug APK
+npx expo run:android
+
+# 5.5 Build Production Android APK / AAB using EAS (Expo Application Services)
+npx eas build --platform android --profile production
+
+# 5.6 Build Preview APK for Direct Device Sideloading
+npx eas build --platform android --profile preview
+
+--------------------------------------------------------------------------------
+6. BACKEND & SUPABASE (OPTIONAL FOR CLOUD SYNC)
+--------------------------------------------------------------------------------
+# The application runs fully offline out of the box using SQLite.
+# To connect your own Supabase project:
+
+# 6.1 Create .env file with your credentials:
+# EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+# EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# 6.2 Supabase CLI Commands
+# Login to Supabase CLI:
+npx supabase login
+
+# Link Local Project to Remote Supabase Instance:
+npx supabase link --project-ref your-project-ref
+
+# Push Database Migrations (RLS policies, tables, schemas):
+npx supabase db push
+
+# Run Local Supabase Development Stack (requires Docker):
+npx supabase start
+npx supabase stop
+
+--------------------------------------------------------------------------------
+7. SHORTCUT KEYS IN METRO BUNDLER CLI
+--------------------------------------------------------------------------------
+While 'npm start' or 'npx expo start' is running in the terminal:
+- Press 'w' -> Open web app in default browser
+- Press 'a' -> Open on Android emulator or connected device
+- Press 'r' -> Reload active application
+- Press 'm' -> Toggle developer menu on device
+- Press 'c' -> Clear console
+- Press 'j' -> Open Chrome DevTools debugger
+- Press 'Ctrl + C' -> Stop dev server
+================================================================================

@@ -200,3 +200,4 @@ CREATE POLICY "Users manage own ratings" ON profile_ratings FOR ALL
 DROP POLICY IF EXISTS "Users manage own favourites" ON profile_favourites;
 CREATE POLICY "Users manage own favourites" ON profile_favourites FOR ALL
     USING (auth.uid() = user_id);
+

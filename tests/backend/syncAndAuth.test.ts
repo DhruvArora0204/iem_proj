@@ -60,3 +60,4 @@ describe('SyncManager', () => {
     assert.ok(status.state === 'idle' || status.state === 'offline');
   });
 });
+
