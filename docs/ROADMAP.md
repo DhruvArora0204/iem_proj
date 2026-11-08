@@ -10,8 +10,8 @@ This document outlines the phased development roadmap for **Audiophile**. Develo
 |---|---|---|---|
 | **Phase 0** | Requirements & Architecture | Architecture, DSP specs, Data Models, Roadmap | **COMPLETE** |
 | **Phase 1** | Project Foundation | Expo + TS + Zustand + SQLite + Theme + Router | **COMPLETE** |
-| **Phase 2** | UI/UX Development | Futuristic Audio Lab design, Skia FR curve, Knobs | **NEXT** |
-| **Phase 3** | Equalizer DSP Engine | RBJ Biquad filters, Headroom, In-App Player | Pending |
+| **Phase 2** | UI/UX Development | Futuristic Audio Lab design, Skia FR curve, Knobs | **COMPLETE** |
+| **Phase 3** | Equalizer DSP Engine | RBJ Biquad filters, Headroom, In-App Player | **NEXT** |
 | **Phase 4** | IEM Database & Recommendations | IEM catalog, FR measurements, Target curves | Pending |
 | **Phase 5** | Backend & Authentication | Supabase Postgres, RLS, Auth, Offline Sync | Pending |
 | **Phase 6** | Community Features | Profile sharing, Ratings, Attribution, Moderation | Pending |
@@ -65,7 +65,7 @@ This document outlines the phased development roadmap for **Audiophile**. Develo
 ---
 
 ### PHASE 2 — UI/UX Development
-* **Status**: Queued
+* **Status**: Complete
 * **Objectives**:
   - Build the complete visual frontend following the Futuristic Audio Lab aesthetic.
 * **Implementation Tasks**:
