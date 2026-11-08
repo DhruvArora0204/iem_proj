@@ -12,8 +12,8 @@ This document outlines the phased development roadmap for **Audiophile**. Develo
 | **Phase 1** | Project Foundation | Expo + TS + Zustand + SQLite + Theme + Router | **COMPLETE** |
 | **Phase 2** | UI/UX Development | Futuristic Audio Lab design, Skia FR curve, Knobs | **COMPLETE** |
 | **Phase 3** | Equalizer DSP Engine | RBJ Biquad filters, Headroom, In-App Player | **COMPLETE** |
-| **Phase 4** | IEM Database & Recommendations | IEM catalog, FR measurements, Target curves | **NEXT** |
-| **Phase 5** | Backend & Authentication | Supabase Postgres, RLS, Auth, Offline Sync | Pending |
+| **Phase 4** | IEM Database & Recommendations | IEM catalog, FR measurements, Target curves | **COMPLETE** |
+| **Phase 5** | Backend & Authentication | Supabase Postgres, RLS, Auth, Offline Sync | **NEXT** |
 | **Phase 6** | Community Features | Profile sharing, Ratings, Attribution, Moderation | Pending |
 | **Phase 7** | Device Integration | Bluetooth/USB DAC detection, Android routing | Pending |
 | **Phase 8** | Adaptive Audio Intelligence | Context-aware tuning, spectral analysis | Future |
@@ -115,7 +115,7 @@ This document outlines the phased development roadmap for **Audiophile**. Develo
 ---
 
 ### PHASE 4 — IEM Database and Recommendation Engine
-* **Status**: Queued
+* **Status**: Complete
 * **Objectives**:
   - Seed IEM catalog and build recommendation algorithms.
 * **Implementation Tasks**:
