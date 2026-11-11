@@ -82,3 +82,4 @@ CREATE POLICY "Users insert own reports" ON profile_reports FOR INSERT
 DROP POLICY IF EXISTS "Reporters view own reports" ON profile_reports;
 CREATE POLICY "Reporters view own reports" ON profile_reports FOR SELECT
     USING (auth.uid() = reporter_id);
+

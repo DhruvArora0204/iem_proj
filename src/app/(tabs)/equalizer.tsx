@@ -1,21 +1,21 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, Switch, TouchableOpacity } from 'react-native';
-import { ScreenContainer } from '@/components/layout/ScreenContainer';
-import { Header } from '@/components/layout/Header';
-import { Card } from '@/components/common/Card';
-import { Button } from '@/components/common/Button';
-import { Badge } from '@/components/common/Badge';
 import { FrequencyResponseGraph } from '@/components/audio/FrequencyResponseGraph';
-import { MacroKnobsGrid } from '@/features/equalizer/components/MacroKnobsGrid';
-import { AudioTestBench } from '@/features/audio-player/components/AudioTestBench';
-import { FilterEditModal } from '@/features/equalizer/components/FilterEditModal';
-import { SaveProfileModal } from '@/features/presets/components/SaveProfileModal';
-import { PublishProfileModal } from '@/features/community/components/PublishProfileModal';
-import { colors } from '@/theme/colors';
-import { typography } from '@/theme/typography';
-import { spacing, borderRadius } from '@/theme/spacing';
-import { useAudioStore } from '@/store/useAudioStore';
+import { Badge } from '@/components/common/Badge';
+import { Button } from '@/components/common/Button';
+import { Card } from '@/components/common/Card';
+import { Header } from '@/components/layout/Header';
+import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import type { BiquadFilterConfig } from '@/core/types/audio';
+import { AudioTestBench } from '@/features/audio-player/components/AudioTestBench';
+import { PublishProfileModal } from '@/features/community/components/PublishProfileModal';
+import { FilterEditModal } from '@/features/equalizer/components/FilterEditModal';
+import { MacroKnobsGrid } from '@/features/equalizer/components/MacroKnobsGrid';
+import { SaveProfileModal } from '@/features/presets/components/SaveProfileModal';
+import { useAudioStore } from '@/store/useAudioStore';
+import { colors } from '@/theme/colors';
+import { spacing } from '@/theme/spacing';
+import { typography } from '@/theme/typography';
+import { useState } from 'react';
+import { StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
 export default function EqualizerScreen() {
   const {
